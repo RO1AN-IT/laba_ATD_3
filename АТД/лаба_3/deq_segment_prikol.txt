@@ -1,0 +1,132 @@
+// Вспомогательная функция для UnZip: создание пустых деков
+    template<typename... Tuples>
+    std::tuple<SegmentedDeque<Tuples>*...>* createEmptyDeques() const {
+        return new std::tuple<SegmentedDeque<Tuples>*...>(new SegmentedDeque<Tuples>()...);
+    }
+
+    // Вспомогательная функция для UnZip: рекурсивное заполнение деков
+    template<size_t I = 0, typename... Tuples>
+    void fillDequesFromTuple(std::tuple<SegmentedDeque<Tuples>*...>& deques, int index) const {
+        if constexpr (I < sizeof...(Tuples)) {
+            auto* deque = std::get<I>(deques);
+            deque->push_back(std::get<I>(data->Get(index)));
+            fillDequesFromTuple<I + 1, Tuples...>(deques, index);
+        }
+    }
+
+
+
+
+
+// Map: Применяет функцию к каждому элементу
+    template<typename U, typename = std::enable_if_t<std::is_arithmetic_v<U>>>
+    SegmentedDeque<U>* Map(U (*f)(T)) {
+        // Предупреждение: Модификация this->data нарушает типизацию
+        T* newItems = new T[data->GetLength()];
+        for (int i = 0; i < data->GetLength(); ++i) {
+            newItems[i] = f(data->Get(i));
+        }
+        delete data;
+        data = reinterpret_cast<SegmentedList<T>*>(new SegmentedList<U>(newItems, data->GetLength()));
+        delete[] newItems;
+        return this;
+    }
+
+    // Reduce: Сворачивает элементы в одно значение
+    template<typename U, typename = std::enable_if_t<std::is_arithmetic_v<U>>>
+    SegmentedDeque<U>* Reduce(U (*f)(U, T), const U c) {
+        // Предупреждение: Модификация this->data нарушает типизацию
+        U result = c;
+        for (int i = 0; i < data->GetLength(); ++i) {
+            result = f(result, data->Get(i));
+        }
+        delete data;
+        data = reinterpret_cast<SegmentedList<T>*>(new SegmentedList<U>(1));
+        static_cast<SegmentedList<U>*>(data)->Append(result);
+        return this;
+    }
+
+    // Zip: Объединяет элементы с другим деком
+    template<typename... Tuples, typename U, typename = std::enable_if_t<std::is_arithmetic_v<U>>>
+    SegmentedDeque<std::tuple<Tuples..., U>>* Zip(SegmentedDeque<U>* other) {
+        // Предупреждение: Модификация this->data нарушает типизацию
+        int newSize = std::min(data->GetLength(), other->data->GetLength());
+        std::tuple<Tuples..., U>* newItems = new std::tuple<Tuples..., U>[newSize];
+        for (int i = 0; i < newSize; ++i) {
+            newItems[i] = std::tuple_cat(std::make_tuple(data->Get(i)), std::make_tuple(other->data->Get(i)));
+        }
+        delete data;
+        data = reinterpret_cast<SegmentedList<T>*>(new SegmentedList<std::tuple<Tuples..., U>>(newItems, newSize));
+        delete[] newItems;
+        return this;
+    }
+
+    // UnZip: Разделяет дек кортежей на кортеж деков
+    template<typename... Tuples>
+    std::tuple<SegmentedDeque<Tuples>*...>* UnZip() const {
+        static_assert(std::is_same_v<T, std::tuple<Tuples...>>, "Item type must be a tuple");
+        auto* result = createEmptyDeques<Tuples...>();
+        for (int i = 0; i < data->GetLength(); ++i) {
+            fillDequesFromTuple(*result, i);
+        }
+        return result;
+    }
+
+    // Split: Разбивает дек на поддеки
+    template<typename V>
+    SegmentedDeque<SegmentedDeque<V>*>* Split(bool (*f)(V)) {
+        // Предупреждение: Модификация this->data нарушает типизацию
+        int newSize = 0;
+        for (int i = 0; i < data->GetLength(); ++i) {
+            if (f(data->Get(i))) {
+                newSize++;
+            }
+        }
+        SegmentedDeque<V>** newItems = new SegmentedDeque<V>*[newSize];
+        int k = 0;
+        for (int i = 0; i < data->GetLength(); ++i) {
+            if (f(data->Get(i))) {
+                newItems[k] = new SegmentedDeque<V>();
+                newItems[k]->push_back(data->Get(i));
+                k++;
+            }
+        }
+        delete data;
+        data = reinterpret_cast<SegmentedList<T>*>(new SegmentedList<SegmentedDeque<V>*>(newItems, newSize));
+        delete[] newItems;
+        return this;
+    }
+
+    // Where: Фильтрует элементы
+    SegmentedDeque<T>* Where(bool (*f)(T)) {
+        // Предупреждение: Модификация this->data нарушает типизацию
+        int newSize = 0;
+        for (int i = 0; i < data->GetLength(); ++i) {
+            if (f(data->Get(i))) {
+                newSize++;
+            }
+        }
+        T* newItems = new T[newSize];
+        int k = 0;
+        for (int i = 0; i < data->GetLength(); ++i) {
+            if (f(data->Get(i))) {
+                newItems[k++] = data->Get(i);
+            }
+        }
+        delete data;
+        data = new SegmentedList<T>(newItems, newSize);
+        delete[] newItems;
+        return this;
+    }
+
+    // From: Инициализирует дек из массива
+    SegmentedDeque<T>* From(T* items, int size) {
+        delete data;
+        data = new SegmentedList<T>(items, size);
+        return this;
+    }
+
+    // Получение итератора
+    std::unique_ptr<IEnumerator<T>> GetEnumerator() const {
+        return data->GetEnumerator();
+    }

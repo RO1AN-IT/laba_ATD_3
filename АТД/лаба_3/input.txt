@@ -1,0 +1,44 @@
+# Test Cases for Data Structures
+
+# SegmentedDeque Tests
+Input: Array [4, 2, 3, 1]
+Expected: size() = 4, [0] = 4, [3] = 1
+
+# Queue Tests
+Input: Enqueue 1, 2
+Expected: size() = 2, front() = 1, back() = 2
+
+# Deque Tests
+Input: Push back 1, push front 2
+Expected: size() = 2, front() = 2, back() = 1
+
+# Stack Tests
+Input: Push 1, 2
+Expected: size() = 2, top() = 2
+
+# PriorityQueue Tests
+Input: Enqueue (1, 2), (2, 1)
+Expected: peek() = 1, size() = 2
+
+# Vector Tests
+Input: Array [3, 4]
+Expected: norm() = 5.0
+
+# DiagonalMatrix Tests
+Input: Array [1, 2, 3]
+Expected: get(0,0) = 1, get(1,1) = 2, get(1,0) = 0
+
+# TriangularMatrix Tests
+Input: Array [1, 2, 3, 4, 5, 6]
+Expected: get(0,0) = 1, get(0,1) = 2, get(1,0) = 0
+
+# RectangularMatrix Tests
+Input: Array [1, 2, 3, 4]
+Expected: get(0,0) = 1, get(1,1) = 4
+
+# SquareMatrix Tests
+Input: Array [1, 2, 3, 4]
+Expected: get(0,0) = 1, get(1,1) = 4, determinant() = -2
+
+# Hanoi Tests
+Input: Array [3, 3]
